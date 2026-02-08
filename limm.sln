@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "limm", "limm.csproj", "{71DD6162-C8C3-E967-2E9C-52D544910EAF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{71DD6162-C8C3-E967-2E9C-52D544910EAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71DD6162-C8C3-E967-2E9C-52D544910EAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71DD6162-C8C3-E967-2E9C-52D544910EAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71DD6162-C8C3-E967-2E9C-52D544910EAF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F72B9DAD-1E23-42B0-AF16-6B6855DAB66E}
+	EndGlobalSection
+EndGlobal
