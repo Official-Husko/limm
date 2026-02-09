@@ -27,9 +27,8 @@ public class Plugin : BaseUnityPlugin
         MenuOpacity = Config.Bind("General", "MenuOpacity", 0.9f, "Backdrop opacity for the menu (0-1).");
         AnimationSpeed = Config.Bind("General", "AnimationSpeed", 10f, "Fade/scale animation speed.");
 
-        // Create persistent host object
-        var host = new GameObject("ModMenuHost");
-        DontDestroyOnLoad(host);
+        // Create persistent host object (remove previous if hot-reloaded)
+        var host = Utils.HostGuard.CreateFresh("ModMenuHost");
 
         var bootstrap = host.AddComponent<MenuBootstrap>();
         bootstrap.Hotkey = MenuHotkey;

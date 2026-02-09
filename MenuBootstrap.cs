@@ -204,7 +204,7 @@ internal sealed class MenuUI
         titleText.color = Style.Text;
         titleText.alignment = TextAnchor.MiddleCenter;
         titleText.horizontalOverflow = HorizontalWrapMode.Overflow;
-        titleText.text = $"{MyPluginInfo.PLUGIN_NAME} — Mod Menu";
+        titleText.text = MyPluginInfo.PLUGIN_NAME;
         var titleLE = title.AddComponent<LayoutElement>();
         titleLE.flexibleWidth = 1;
         titleLE.minWidth = 200;
