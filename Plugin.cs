@@ -40,10 +40,12 @@ public class Plugin : BaseUnityPlugin
         bootstrap.Config = Config;
 
         // Register built-in pages once; external mods can also call ModMenu.RegisterPage
-        ModMenu.RegisterPage(new Pages.HomePage());
-        ModMenu.RegisterPage(new Pages.GameplayPage());
-        ModMenu.RegisterPage(new Pages.VisualsPage());
-        ModMenu.RegisterPage(new Pages.AboutPage());
+        // Register built-in pages matching requested tabs
+        ModMenu.RegisterPage(new Pages.PlayerPage());
+        ModMenu.RegisterPage(new Pages.OnlinePage());
+        ModMenu.RegisterPage(new Pages.ItemsPage());
+        ModMenu.RegisterPage(new Pages.EnemiesPage());
+        ModMenu.RegisterPage(new Pages.WorldPage());
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_NAME} ({MyPluginInfo.PLUGIN_VERSION}) initialized.");
     }

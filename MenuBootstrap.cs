@@ -103,11 +103,10 @@ internal sealed class MenuUI
 
     private GameObject _canvasRoot;
     private CanvasGroup _canvasGroup;
-    private RectTransform _card;
     private Image _backdrop;
 
     private readonly Dictionary<string, RectTransform> _pageRoots = new();
-    private readonly List<Button> _tabButtons = new();
+    private readonly List<TabEntry> _tabs = new();
     private IMenuPage _activePage;
     private MenuContext _context;
 
@@ -151,14 +150,14 @@ internal sealed class MenuUI
         _backdrop.color = new Color(Style.Backdrop.r / 255f, Style.Backdrop.g / 255f, Style.Backdrop.b / 255f, (_opacity?.Value ?? 0.9f));
 
         // Card
-        var cardObj = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        var cardObj = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
         cardObj.transform.SetParent(_canvasRoot.transform, false);
-        _card = cardObj.GetComponent<RectTransform>();
-        _card.sizeDelta = new Vector2(900, 620);
-        _card.anchorMin = new Vector2(0.5f, 0.5f);
-        _card.anchorMax = new Vector2(0.5f, 0.5f);
-        _card.pivot = new Vector2(0.5f, 0.5f);
-        _card.anchoredPosition = Vector2.zero;
+        var card = cardObj.GetComponent<RectTransform>();
+        card.sizeDelta = new Vector2(1100, 640);
+        card.anchorMin = new Vector2(0.5f, 0.5f);
+        card.anchorMax = new Vector2(0.5f, 0.5f);
+        card.pivot = new Vector2(0.5f, 0.5f);
+        card.anchoredPosition = Vector2.zero;
 
         var cardImage = cardObj.GetComponent<Image>();
         cardImage.color = Style.Panel;
@@ -169,17 +168,49 @@ internal sealed class MenuUI
         vlg.padding = new RectOffset(Style.Padding, Style.Padding, Style.Padding, Style.Padding);
         vlg.spacing = Style.Spacing;
         vlg.childControlHeight = true;
-        vlg.childForceExpandHeight = false;
+        vlg.childForceExpandHeight = true;
         vlg.childControlWidth = true;
         vlg.childForceExpandWidth = true;
 
-        var csf = cardObj.GetComponent<ContentSizeFitter>();
-        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-
         BuildHeader(cardObj.transform);
-        BuildTabs(cardObj.transform);
-        BuildContent(cardObj.transform);
+
+        // Body: nav (left) + content (right)
+        var body = new GameObject("Body", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        body.transform.SetParent(cardObj.transform, false);
+        var bodyRT = body.GetComponent<RectTransform>();
+        bodyRT.sizeDelta = new Vector2(0, 540);
+        var bodyHLG = body.GetComponent<HorizontalLayoutGroup>();
+        bodyHLG.spacing = Style.Spacing;
+        bodyHLG.childControlHeight = true;
+        bodyHLG.childForceExpandHeight = true;
+        bodyHLG.childControlWidth = true;
+        bodyHLG.childForceExpandWidth = true;
+
+        var nav = new GameObject("Nav", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+        nav.transform.SetParent(body.transform, false);
+        var navImg = nav.GetComponent<Image>();
+        navImg.sprite = Style.SolidSprite;
+        navImg.type = Image.Type.Simple;
+        navImg.color = new Color32(22, 22, 30, 255);
+        var navRT = nav.GetComponent<RectTransform>();
+        navRT.sizeDelta = new Vector2(220, 0);
+        var navVLG = nav.GetComponent<VerticalLayoutGroup>();
+        navVLG.padding = new RectOffset(8, 8, 8, 8);
+        navVLG.spacing = 8;
+        navVLG.childForceExpandWidth = true;
+        navVLG.childControlWidth = true;
+        navVLG.childForceExpandHeight = false;
+        navVLG.childControlHeight = true;
+        var navLE = nav.AddComponent<LayoutElement>();
+        navLE.minWidth = 200;
+        navLE.preferredWidth = 220;
+
+        var contentHolder = new GameObject("ContentHolder", typeof(RectTransform), typeof(LayoutElement));
+        contentHolder.transform.SetParent(body.transform, false);
+        contentHolder.GetComponent<LayoutElement>().flexibleWidth = 1;
+
+        BuildTabs(nav.transform);
+        BuildContent(contentHolder.transform);
     }
 
     private void BuildHeader(Transform parent)
@@ -199,47 +230,87 @@ internal sealed class MenuUI
 
     private void BuildTabs(Transform parent)
     {
-        var tabs = new GameObject("Tabs", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        tabs.transform.SetParent(parent, false);
-        var hlg = tabs.GetComponent<HorizontalLayoutGroup>();
-        hlg.spacing = Style.Spacing;
-        hlg.childForceExpandWidth = false;
-        hlg.childControlWidth = true;
-
         foreach (var page in ModMenu.Pages)
         {
             var btnObj = new GameObject($"Tab_{page.Id}", typeof(RectTransform), typeof(Image), typeof(Button));
-            btnObj.transform.SetParent(tabs.transform, false);
+            btnObj.transform.SetParent(parent, false);
             var img = btnObj.GetComponent<Image>();
             img.sprite = Style.SolidSprite;
             img.type = Image.Type.Simple;
             img.color = Style.Panel;
+
             var btn = btnObj.GetComponent<Button>();
+            btn.transition = Selectable.Transition.ColorTint;
             var colors = btn.colors;
             colors.normalColor = Style.Panel;
-            colors.highlightedColor = Style.Accent;
-            colors.selectedColor = Style.Accent;
+            colors.highlightedColor = new Color32((byte)(Style.Accent.r + 10), (byte)(Style.Accent.g + 10), (byte)(Style.Accent.b + 10), 255);
             colors.pressedColor = Style.Accent;
+            colors.selectedColor = Style.Accent;
+            colors.colorMultiplier = 1f;
             btn.colors = colors;
-            _tabButtons.Add(btn);
 
+            // Layout size
+            var brt = btnObj.GetComponent<RectTransform>();
+            brt.sizeDelta = new Vector2(0, 52);
+
+            // Icon
+            var iconObj = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconObj.transform.SetParent(btnObj.transform, false);
+            var iconImg = iconObj.GetComponent<Image>();
+            iconImg.sprite = Style.SolidSprite;
+            iconImg.color = Style.Muted;
+            var iconRT = iconObj.GetComponent<RectTransform>();
+            iconRT.anchorMin = new Vector2(0, 0.5f);
+            iconRT.anchorMax = new Vector2(0, 0.5f);
+            iconRT.pivot = new Vector2(0.5f, 0.5f);
+            iconRT.anchoredPosition = new Vector2(22, 0);
+            iconRT.sizeDelta = new Vector2(26, 26);
+
+            // Icon letter
+            var iconLabel = new GameObject("IconLabel", typeof(RectTransform), typeof(Text));
+            iconLabel.transform.SetParent(iconObj.transform, false);
+            var iconText = iconLabel.GetComponent<Text>();
+            iconText.font = Style.DefaultFont;
+            iconText.fontSize = 14;
+            iconText.alignment = TextAnchor.MiddleCenter;
+            iconText.color = Style.Panel;
+            iconText.text = page.Title.Length > 0 ? page.Title[0].ToString().ToUpperInvariant() : "?";
+            var iconLabelRT = iconLabel.GetComponent<RectTransform>();
+            iconLabelRT.anchorMin = Vector2.zero;
+            iconLabelRT.anchorMax = Vector2.one;
+            iconLabelRT.offsetMin = iconLabelRT.offsetMax = Vector2.zero;
+
+            // Text
             var label = new GameObject("Label", typeof(RectTransform), typeof(Text));
             label.transform.SetParent(btnObj.transform, false);
             var txt = label.GetComponent<Text>();
             txt.font = Style.DefaultFont;
             txt.fontSize = Style.FontSize;
             txt.color = Style.Text;
-            txt.alignment = TextAnchor.MiddleCenter;
+            txt.alignment = TextAnchor.MiddleLeft;
             txt.text = page.Title;
             var lrt = label.GetComponent<RectTransform>();
-            lrt.anchorMin = Vector2.zero;
-            lrt.anchorMax = Vector2.one;
-            lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+            lrt.anchorMin = new Vector2(0, 0);
+            lrt.anchorMax = new Vector2(1, 1);
+            lrt.offsetMin = new Vector2(56, 6);
+            lrt.offsetMax = new Vector2(-12, -6);
 
-            var brt = btnObj.GetComponent<RectTransform>();
-            brt.sizeDelta = new Vector2(120, 36);
+            // Add padding via LayoutElement
+            var le = btnObj.AddComponent<LayoutElement>();
+            le.minHeight = 48;
+            le.preferredHeight = 52;
+            le.flexibleWidth = 1;
 
-            btn.onClick.AddListener(() => SwitchPage(page, btn));
+            var entry = new TabEntry
+            {
+                Page = page,
+                Button = btn,
+                Label = txt,
+                Icon = iconImg
+            };
+            _tabs.Add(entry);
+
+            btn.onClick.AddListener(() => SwitchPage(page, entry));
         }
     }
 
@@ -255,9 +326,9 @@ internal sealed class MenuUI
         var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Mask), typeof(Image));
         viewport.transform.SetParent(scrollObj.transform, false);
         var vpImage = viewport.GetComponent<Image>();
-            vpImage.sprite = Style.SolidSprite;
-            vpImage.type = Image.Type.Simple;
-            vpImage.color = new Color32(0, 0, 0, 0);
+        vpImage.sprite = Style.SolidSprite;
+        vpImage.type = Image.Type.Simple;
+        vpImage.color = new Color32(0, 0, 0, 0);
         var mask = viewport.GetComponent<Mask>();
         mask.showMaskGraphic = false;
 
@@ -276,11 +347,9 @@ internal sealed class MenuUI
         scroll.content = content.GetComponent<RectTransform>();
         scroll.viewport = viewport.GetComponent<RectTransform>();
 
-        // Layout sizing
         var srt = scrollObj.GetComponent<RectTransform>();
-        srt.sizeDelta = new Vector2(0, 480);
+        srt.sizeDelta = new Vector2(0, 0);
 
-        // Build pages into stacked containers; only one enabled at a time
         foreach (var page in ModMenu.Pages)
         {
             var pageRoot = new GameObject(page.Id, typeof(RectTransform));
@@ -305,14 +374,13 @@ internal sealed class MenuUI
             _pageRoots[page.Id] = prt;
         }
 
-        // Activate first page
-        if (ModMenu.Pages.Count > 0)
+        if (ModMenu.Pages.Count > 0 && _tabs.Count > 0)
         {
-            SwitchPage(ModMenu.Pages[0], _tabButtons[0]);
+            SwitchPage(ModMenu.Pages[0], _tabs[0]);
         }
     }
 
-    private void SwitchPage(IMenuPage page, Button sender)
+    private void SwitchPage(IMenuPage page, TabEntry entry)
     {
         if (page == _activePage)
             return;
@@ -322,12 +390,15 @@ internal sealed class MenuUI
             kv.Value.gameObject.SetActive(kv.Key == page.Id);
         }
 
-        foreach (var btn in _tabButtons)
+        foreach (var tab in _tabs)
         {
-            var colors = btn.colors;
-            colors.normalColor = btn == sender ? Style.Accent : Style.Panel;
-            colors.highlightedColor = Style.Accent;
-            btn.colors = colors;
+            var selected = tab.Page == page;
+            var img = tab.Button.targetGraphic as Image;
+            if (img != null)
+                img.color = selected ? new Color32(Style.Accent.r, Style.Accent.g, Style.Accent.b, 180) : Style.Panel;
+
+            tab.Label.color = selected ? Style.Accent : Style.Text;
+            tab.Icon.color = selected ? Style.Accent : Style.Muted;
         }
 
         _activePage?.OnClose(_context);
@@ -376,9 +447,16 @@ internal sealed class MenuUI
         if (_canvasGroup != null)
             _canvasGroup.alpha = _animCurrent;
 
-        if (_card != null)
-        {
-            _card.localScale = Vector3.Lerp(new Vector3(0.9f, 0.9f, 1f), Vector3.one, _animCurrent);
-        }
+        // Subtle scale on all children
+        if (_canvasRoot != null)
+            _canvasRoot.transform.localScale = Vector3.Lerp(new Vector3(0.96f, 0.96f, 1f), Vector3.one, _animCurrent);
+    }
+
+    private class TabEntry
+    {
+        public IMenuPage Page;
+        public Button Button;
+        public Text Label;
+        public Image Icon;
     }
 }
