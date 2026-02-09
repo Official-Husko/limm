@@ -1,5 +1,7 @@
 ﻿using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
+using UnityEngine;
 
 namespace limm;
 
@@ -7,11 +9,42 @@ namespace limm;
 public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
-        
+
+    internal static ConfigEntry<KeyboardShortcut> MenuHotkey;
+    internal static ConfigEntry<bool> PauseGameWhenOpen;
+    internal static ConfigEntry<bool> UnlockCursorWhenOpen;
+    internal static ConfigEntry<float> MenuOpacity;
+    internal static ConfigEntry<float> AnimationSpeed;
+
     private void Awake()
     {
-        // Plugin startup logic
         Logger = base.Logger;
-        Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded! Fuck you Len's Island!");
+
+        // Core config
+        MenuHotkey = Config.Bind("General", "MenuHotkey", new KeyboardShortcut(KeyCode.Insert), "Hotkey to open/close the mod menu.");
+        PauseGameWhenOpen = Config.Bind("General", "PauseGameWhenOpen", false, "Pause Time.timeScale while the menu is open.");
+        UnlockCursorWhenOpen = Config.Bind("General", "UnlockCursorWhenOpen", true, "Unlock and show the cursor while the menu is open.");
+        MenuOpacity = Config.Bind("General", "MenuOpacity", 0.9f, "Backdrop opacity for the menu (0-1).");
+        AnimationSpeed = Config.Bind("General", "AnimationSpeed", 10f, "Fade/scale animation speed.");
+
+        // Create persistent host object
+        var host = new GameObject("ModMenuHost");
+        DontDestroyOnLoad(host);
+
+        var bootstrap = host.AddComponent<MenuBootstrap>();
+        bootstrap.Hotkey = MenuHotkey;
+        bootstrap.PauseWhenOpen = PauseGameWhenOpen;
+        bootstrap.UnlockCursorWhenOpen = UnlockCursorWhenOpen;
+        bootstrap.MenuOpacity = MenuOpacity;
+        bootstrap.AnimationSpeed = AnimationSpeed;
+        bootstrap.Config = Config;
+
+        // Register built-in pages once; external mods can also call ModMenu.RegisterPage
+        ModMenu.RegisterPage(new Pages.HomePage());
+        ModMenu.RegisterPage(new Pages.GameplayPage());
+        ModMenu.RegisterPage(new Pages.VisualsPage());
+        ModMenu.RegisterPage(new Pages.AboutPage());
+
+        Logger.LogInfo($"{MyPluginInfo.PLUGIN_NAME} ({MyPluginInfo.PLUGIN_VERSION}) initialized.");
     }
 }
