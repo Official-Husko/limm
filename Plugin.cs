@@ -46,6 +46,7 @@ public class Plugin : BaseUnityPlugin
         ModMenu.RegisterPage(new Pages.ItemsPage());
         ModMenu.RegisterPage(new Pages.EnemiesPage());
         ModMenu.RegisterPage(new Pages.WorldPage());
+        ModMenu.RegisterPage(new Pages.AboutPage());
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_NAME} ({MyPluginInfo.PLUGIN_VERSION}) initialized.");
     }

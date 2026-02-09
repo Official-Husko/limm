@@ -153,38 +153,73 @@ internal sealed class MenuUI
         var cardObj = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
         cardObj.transform.SetParent(_canvasRoot.transform, false);
         var card = cardObj.GetComponent<RectTransform>();
-        card.sizeDelta = new Vector2(1100, 640);
-        card.anchorMin = new Vector2(0.5f, 0.5f);
-        card.anchorMax = new Vector2(0.5f, 0.5f);
+        card.anchorMin = Vector2.zero;
+        card.anchorMax = Vector2.one;
+        card.offsetMin = Vector2.zero;
+        card.offsetMax = Vector2.zero;
         card.pivot = new Vector2(0.5f, 0.5f);
-        card.anchoredPosition = Vector2.zero;
 
         var cardImage = cardObj.GetComponent<Image>();
         cardImage.color = Style.Panel;
         cardImage.type = Image.Type.Simple;
         cardImage.sprite = Style.SolidSprite;
 
-        var vlg = cardObj.GetComponent<VerticalLayoutGroup>();
-        vlg.padding = new RectOffset(Style.Padding, Style.Padding, Style.Padding, Style.Padding);
-        vlg.spacing = Style.Spacing;
-        vlg.childControlHeight = true;
-        vlg.childForceExpandHeight = true;
-        vlg.childControlWidth = true;
-        vlg.childForceExpandWidth = true;
+        var layout = cardObj.GetComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(Style.Padding, Style.Padding, Style.Padding, Style.Padding);
+        layout.spacing = Style.Spacing;
+        layout.childControlWidth = true;
+        layout.childForceExpandWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandHeight = false;
 
-        BuildHeader(cardObj.transform);
+        // Header (icon + title)
+        var header = new GameObject("Header", typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup));
+        header.transform.SetParent(cardObj.transform, false);
+        var headerBg = header.GetComponent<Image>();
+        headerBg.sprite = Style.SolidSprite;
+        headerBg.type = Image.Type.Simple;
+        headerBg.color = new Color32(22, 22, 30, 255);
 
-        // Body: nav (left) + content (right)
+        var headerHLG = header.GetComponent<HorizontalLayoutGroup>();
+        headerHLG.spacing = 0;
+        headerHLG.padding = new RectOffset(12, 12, 8, 8);
+        headerHLG.childAlignment = TextAnchor.MiddleCenter;
+        headerHLG.childForceExpandHeight = false;
+        headerHLG.childControlHeight = true;
+        headerHLG.childForceExpandWidth = true;
+        headerHLG.childControlWidth = true;
+
+        var headerLE = header.AddComponent<LayoutElement>();
+        headerLE.minHeight = 44;
+        headerLE.preferredHeight = 48;
+        headerLE.flexibleHeight = 0;
+        headerLE.flexibleWidth = 1;
+
+        var title = new GameObject("Title", typeof(RectTransform), typeof(Text));
+        title.transform.SetParent(header.transform, false);
+        var titleText = title.GetComponent<Text>();
+        titleText.font = Style.DefaultFont;
+        titleText.fontSize = 28;
+        titleText.fontStyle = FontStyle.Bold;
+        titleText.color = Style.Text;
+        titleText.alignment = TextAnchor.MiddleCenter;
+        titleText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        titleText.text = $"{MyPluginInfo.PLUGIN_NAME} — Mod Menu";
+        var titleLE = title.AddComponent<LayoutElement>();
+        titleLE.flexibleWidth = 1;
+        titleLE.minWidth = 200;
+
+        // Body area
         var body = new GameObject("Body", typeof(RectTransform), typeof(HorizontalLayoutGroup));
         body.transform.SetParent(cardObj.transform, false);
-        var bodyRT = body.GetComponent<RectTransform>();
-        bodyRT.sizeDelta = new Vector2(0, 540);
         var bodyHLG = body.GetComponent<HorizontalLayoutGroup>();
         bodyHLG.spacing = Style.Spacing;
         bodyHLG.childControlHeight = true;
         bodyHLG.childForceExpandHeight = true;
         bodyHLG.childControlWidth = true;
         bodyHLG.childForceExpandWidth = true;
+        var bodyLE = body.AddComponent<LayoutElement>();
+        bodyLE.flexibleHeight = 1;
 
         var nav = new GameObject("Nav", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
         nav.transform.SetParent(body.transform, false);
@@ -192,18 +227,17 @@ internal sealed class MenuUI
         navImg.sprite = Style.SolidSprite;
         navImg.type = Image.Type.Simple;
         navImg.color = new Color32(22, 22, 30, 255);
-        var navRT = nav.GetComponent<RectTransform>();
-        navRT.sizeDelta = new Vector2(220, 0);
         var navVLG = nav.GetComponent<VerticalLayoutGroup>();
-        navVLG.padding = new RectOffset(8, 8, 8, 8);
-        navVLG.spacing = 8;
+        navVLG.padding = new RectOffset(10, 10, 10, 10);
+        navVLG.spacing = 10;
         navVLG.childForceExpandWidth = true;
         navVLG.childControlWidth = true;
-        navVLG.childForceExpandHeight = false;
+        navVLG.childForceExpandHeight = true;
         navVLG.childControlHeight = true;
         var navLE = nav.AddComponent<LayoutElement>();
-        navLE.minWidth = 200;
-        navLE.preferredWidth = 220;
+        navLE.minWidth = 150;
+        navLE.preferredWidth = 170;
+        navLE.flexibleHeight = 1;
 
         var contentHolder = new GameObject("ContentHolder", typeof(RectTransform), typeof(LayoutElement));
         contentHolder.transform.SetParent(body.transform, false);
@@ -211,6 +245,22 @@ internal sealed class MenuUI
 
         BuildTabs(nav.transform);
         BuildContent(contentHolder.transform);
+
+        // Version footer bottom-right aligned via layout
+        var version = new GameObject("Version", typeof(RectTransform), typeof(Text));
+        version.transform.SetParent(cardObj.transform, false);
+        var verText = version.GetComponent<Text>();
+        verText.font = Style.DefaultFont;
+        verText.fontSize = 12;
+        verText.color = Style.Muted;
+        verText.alignment = TextAnchor.LowerRight;
+        verText.text = $"v{MyPluginInfo.PLUGIN_VERSION}";
+        var verRT = version.GetComponent<RectTransform>();
+        verRT.sizeDelta = new Vector2(0, 20);
+        var verLE = version.AddComponent<LayoutElement>();
+        verLE.minHeight = 20;
+        verLE.preferredHeight = 20;
+        verLE.flexibleWidth = 1;
     }
 
     private void BuildHeader(Transform parent)
@@ -243,7 +293,7 @@ internal sealed class MenuUI
             btn.transition = Selectable.Transition.ColorTint;
             var colors = btn.colors;
             colors.normalColor = Style.Panel;
-            colors.highlightedColor = new Color32((byte)(Style.Accent.r + 10), (byte)(Style.Accent.g + 10), (byte)(Style.Accent.b + 10), 255);
+            colors.highlightedColor = new Color32((byte)Mathf.Min(255, Style.Accent.r + 20), (byte)Mathf.Min(255, Style.Accent.g + 20), (byte)Mathf.Min(255, Style.Accent.b + 20), 255);
             colors.pressedColor = Style.Accent;
             colors.selectedColor = Style.Accent;
             colors.colorMultiplier = 1f;
@@ -449,7 +499,7 @@ internal sealed class MenuUI
 
         // Subtle scale on all children
         if (_canvasRoot != null)
-            _canvasRoot.transform.localScale = Vector3.Lerp(new Vector3(0.96f, 0.96f, 1f), Vector3.one, _animCurrent);
+            _canvasRoot.transform.localScale = Vector3.Lerp(new Vector3(0.99f, 0.99f, 1f), Vector3.one, _animCurrent);
     }
 
     private class TabEntry
