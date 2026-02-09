@@ -217,7 +217,7 @@ internal sealed class MenuUI
         bodyHLG.childControlHeight = true;
         bodyHLG.childForceExpandHeight = true;
         bodyHLG.childControlWidth = true;
-        bodyHLG.childForceExpandWidth = true;
+        bodyHLG.childForceExpandWidth = false;
         var bodyLE = body.AddComponent<LayoutElement>();
         bodyLE.flexibleHeight = 1;
 
@@ -228,15 +228,16 @@ internal sealed class MenuUI
         navImg.type = Image.Type.Simple;
         navImg.color = new Color32(22, 22, 30, 255);
         var navVLG = nav.GetComponent<VerticalLayoutGroup>();
-        navVLG.padding = new RectOffset(10, 10, 10, 10);
-        navVLG.spacing = 10;
+        navVLG.padding = new RectOffset(8, 8, 8, 8);
+        navVLG.spacing = 6;
         navVLG.childForceExpandWidth = true;
         navVLG.childControlWidth = true;
-        navVLG.childForceExpandHeight = true;
+        navVLG.childForceExpandHeight = false;
         navVLG.childControlHeight = true;
         var navLE = nav.AddComponent<LayoutElement>();
-        navLE.minWidth = 150;
-        navLE.preferredWidth = 170;
+        navLE.minWidth = 120;
+        navLE.preferredWidth = 135;
+        navLE.flexibleWidth = 0;
         navLE.flexibleHeight = 1;
 
         var contentHolder = new GameObject("ContentHolder", typeof(RectTransform), typeof(LayoutElement));
@@ -301,7 +302,7 @@ internal sealed class MenuUI
 
             // Layout size
             var brt = btnObj.GetComponent<RectTransform>();
-            brt.sizeDelta = new Vector2(0, 52);
+            brt.sizeDelta = new Vector2(0, 36);
 
             // Icon
             var iconObj = new GameObject("Icon", typeof(RectTransform), typeof(Image));
@@ -313,8 +314,8 @@ internal sealed class MenuUI
             iconRT.anchorMin = new Vector2(0, 0.5f);
             iconRT.anchorMax = new Vector2(0, 0.5f);
             iconRT.pivot = new Vector2(0.5f, 0.5f);
-            iconRT.anchoredPosition = new Vector2(22, 0);
-            iconRT.sizeDelta = new Vector2(26, 26);
+            iconRT.anchoredPosition = new Vector2(14, 0);
+            iconRT.sizeDelta = new Vector2(18, 18);
 
             // Icon letter
             var iconLabel = new GameObject("IconLabel", typeof(RectTransform), typeof(Text));
@@ -342,13 +343,13 @@ internal sealed class MenuUI
             var lrt = label.GetComponent<RectTransform>();
             lrt.anchorMin = new Vector2(0, 0);
             lrt.anchorMax = new Vector2(1, 1);
-            lrt.offsetMin = new Vector2(56, 6);
-            lrt.offsetMax = new Vector2(-12, -6);
+            lrt.offsetMin = new Vector2(34, 4);
+            lrt.offsetMax = new Vector2(-8, -4);
 
             // Add padding via LayoutElement
             var le = btnObj.AddComponent<LayoutElement>();
-            le.minHeight = 48;
-            le.preferredHeight = 52;
+            le.minHeight = 34;
+            le.preferredHeight = 36;
             le.flexibleWidth = 1;
 
             var entry = new TabEntry
