@@ -72,3 +72,7 @@ namespace LensIslandModMenu.MonoMod
             PlayerInfo.jumpRequested = true;
 
             // Don’t call orig() — that would re-check A
+
+        }
+    }
+}

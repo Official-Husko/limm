@@ -34,7 +34,104 @@ public sealed class MenuContext
         var go = CreateText(text, Style.HeaderSize, FontStyle.Bold, Style.Text);
         go.transform.SetParent(_contentRoot, false);
         var layout = go.AddComponent<LayoutElement>();
-        layout.minHeight = 28;
+        layout.minHeight = 26;
+    }
+
+    public void AddSeparator()
+    {
+        var line = new GameObject("Separator", typeof(RectTransform), typeof(Image));
+        line.transform.SetParent(_contentRoot, false);
+        var img = line.GetComponent<Image>();
+        img.sprite = Style.SolidSprite;
+        img.color = new Color32(60, 60, 70, 180);
+        var rt = line.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0, 0.5f);
+        rt.anchorMax = new Vector2(1, 0.5f);
+        rt.sizeDelta = new Vector2(0, 2);
+        var le = line.AddComponent<LayoutElement>();
+        le.minHeight = 2;
+        le.preferredHeight = 2;
+    }
+
+    /// <summary>
+    /// Creates a horizontal row with evenly split columns.
+    /// </summary>
+    public RectTransform[] AddRow(int columns = 3)
+    {
+        var row = new GameObject("RowGroup", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        row.transform.SetParent(_contentRoot, false);
+        var hlg = row.GetComponent<HorizontalLayoutGroup>();
+        hlg.spacing = Style.Spacing;
+        hlg.childAlignment = TextAnchor.UpperLeft;
+        hlg.childControlWidth = true;
+        hlg.childForceExpandWidth = true;
+        hlg.childControlHeight = true;
+        hlg.childForceExpandHeight = false;
+        var le = row.AddComponent<LayoutElement>();
+        le.preferredHeight = 80;
+        le.flexibleWidth = 1;
+
+        var cols = new RectTransform[columns];
+        for (int i = 0; i < columns; i++)
+        {
+            var col = new GameObject($"Col{i + 1}", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+            col.transform.SetParent(row.transform, false);
+            var v = col.GetComponent<VerticalLayoutGroup>();
+            v.spacing = 4;
+            v.childControlWidth = true;
+            v.childForceExpandWidth = true;
+            v.childControlHeight = true;
+            v.childForceExpandHeight = false;
+            var cle = col.GetComponent<LayoutElement>();
+            cle.flexibleWidth = 1;
+            cle.minHeight = 70;
+            cols[i] = col.GetComponent<RectTransform>();
+        }
+
+        return cols;
+    }
+
+    public Toggle AddToggleCard(string label, ConfigEntry<bool> binding, RectTransform parent, Action<bool> onChanged = null)
+    {
+        var block = new GameObject(label + "_Card", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+        block.transform.SetParent(parent, false);
+        var v = block.GetComponent<VerticalLayoutGroup>();
+        v.spacing = 4;
+        v.padding = new RectOffset(4, 4, 4, 4);
+        v.childControlWidth = true;
+        v.childForceExpandWidth = true;
+        v.childControlHeight = true;
+        v.childForceExpandHeight = false;
+
+        var cardLe = block.GetComponent<LayoutElement>();
+        cardLe.minHeight = 48;
+        cardLe.preferredHeight = 54;
+
+        var labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
+        labelGo.transform.SetParent(block.transform, false);
+
+        return AddToggle(label, binding, onChanged, block.transform);
+    }
+
+    public Slider AddSliderCard(string label, ConfigEntry<float> binding, float min, float max, float step, RectTransform parent, Action<float> onChanged = null)
+    {
+        var block = new GameObject(label + "_Card", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+        block.transform.SetParent(parent, false);
+        var v = block.GetComponent<VerticalLayoutGroup>();
+        v.spacing = 4;
+        v.padding = new RectOffset(4, 4, 4, 4);
+        v.childControlWidth = true;
+        v.childForceExpandWidth = true;
+        v.childControlHeight = true;
+        v.childForceExpandHeight = false;
+        var cardLe = block.GetComponent<LayoutElement>();
+        cardLe.minHeight = 48;
+        cardLe.preferredHeight = 54;
+
+        var labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
+        labelGo.transform.SetParent(block.transform, false);
+
+        return AddSliderInternal(binding, min, max, step, onChanged, block.transform, labelGo.GetComponent<Text>());
     }
 
     public void AddParagraph(string text)
@@ -54,8 +151,11 @@ public sealed class MenuContext
     }
 
     public Toggle AddToggle(string label, ConfigEntry<bool> binding, Action<bool> onChanged = null)
+        => AddToggle(label, binding, onChanged, _contentRoot);
+
+    private Toggle AddToggle(string label, ConfigEntry<bool> binding, Action<bool> onChanged, Transform parent)
     {
-        var row = CreateRow(label, out var _, out var controlArea);
+        var row = CreateRow(label, parent, out var _, out var controlArea);
         var toggleObj = new GameObject("Toggle", typeof(RectTransform), typeof(Toggle), typeof(Image));
         toggleObj.transform.SetParent(controlArea, false);
 
@@ -93,9 +193,12 @@ public sealed class MenuContext
     }
 
     public Slider AddSlider(string label, ConfigEntry<float> binding, float min, float max, float step = 0f, Action<float> onChanged = null)
+        => AddSliderInternal(binding, min, max, step, onChanged, null, null);
+
+    private Slider AddSliderInternal(ConfigEntry<float> binding, float min, float max, float step, Action<float> onChanged, Transform parentOverride, Text valueTextOverride)
     {
-        var row = CreateRow(label, out var valueLabelObj, out var controlArea);
-        var valueText = valueLabelObj.GetComponent<Text>();
+        var row = CreateRow(valueTextOverride != null ? string.Empty : null, parentOverride ?? _contentRoot, out var valueLabelObj, out var controlArea);
+        var valueText = valueTextOverride ?? valueLabelObj.GetComponent<Text>();
 
         var sliderObj = new GameObject("Slider", typeof(RectTransform), typeof(Slider));
         sliderObj.transform.SetParent(controlArea, false);
@@ -103,8 +206,12 @@ public sealed class MenuContext
         slider.minValue = min;
         slider.maxValue = max;
         slider.value = Mathf.Clamp(binding.Value, min, max);
+        var sliderRt = sliderObj.GetComponent<RectTransform>();
+        sliderRt.sizeDelta = new Vector2(220, 22);
+        var sliderLe = sliderObj.AddComponent<LayoutElement>();
+        sliderLe.preferredHeight = 22;
+        sliderLe.minHeight = 20;
 
-        // Background
         var background = new GameObject("Background", typeof(RectTransform), typeof(Image));
         background.transform.SetParent(sliderObj.transform, false);
         var bgImg = background.GetComponent<Image>();
@@ -112,11 +219,10 @@ public sealed class MenuContext
         bgImg.type = Image.Type.Simple;
         bgImg.color = Style.Panel;
         var bgRt = background.GetComponent<RectTransform>();
-        bgRt.anchorMin = new Vector2(0, 0.25f);
-        bgRt.anchorMax = new Vector2(1, 0.75f);
+        bgRt.anchorMin = new Vector2(0, 0.35f);
+        bgRt.anchorMax = new Vector2(1, 0.65f);
         bgRt.offsetMin = bgRt.offsetMax = Vector2.zero;
 
-        // Fill
         var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
         fill.transform.SetParent(background.transform, false);
         var fillImg = fill.GetComponent<Image>();
@@ -126,17 +232,16 @@ public sealed class MenuContext
         var fillRt = fill.GetComponent<RectTransform>();
         fillRt.anchorMin = new Vector2(0, 0);
         fillRt.anchorMax = new Vector2(1, 1);
-        fillRt.offsetMin = new Vector2(2, 2);
-        fillRt.offsetMax = new Vector2(-2, -2);
+        fillRt.offsetMin = new Vector2(1, 1);
+        fillRt.offsetMax = new Vector2(-1, -1);
 
-        // Handle
         var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
         handle.transform.SetParent(background.transform, false);
         var handleImg = handle.GetComponent<Image>();
         handleImg.sprite = Style.SolidSprite;
         handleImg.color = Style.Text;
         var handleRt = handle.GetComponent<RectTransform>();
-        handleRt.sizeDelta = new Vector2(16, 16);
+        handleRt.sizeDelta = new Vector2(12, 16);
         handleRt.anchorMin = new Vector2(0, 0.5f);
         handleRt.anchorMax = new Vector2(0, 0.5f);
         handleRt.pivot = new Vector2(0.5f, 0.5f);
@@ -150,11 +255,13 @@ public sealed class MenuContext
         {
             var snapped = step > 0f ? Mathf.Round(v / step) * step : v;
             binding.Value = Mathf.Clamp(snapped, min, max);
-            valueText.text = binding.Value.ToString("0.00");
+            if (valueText != null)
+                valueText.text = binding.Value.ToString("0.00");
             onChanged?.Invoke(binding.Value);
         });
 
-        valueText.text = binding.Value.ToString("0.00");
+        if (valueText != null)
+            valueText.text = binding.Value.ToString("0.00");
         return slider;
     }
 
@@ -325,10 +432,10 @@ public sealed class MenuContext
         return go;
     }
 
-    private GameObject CreateRow(string label, out GameObject valueLabel, out RectTransform controlArea)
+    private GameObject CreateRow(string label, Transform parent, out GameObject valueLabel, out RectTransform controlArea)
     {
         var row = new GameObject("Row", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        row.transform.SetParent(_contentRoot, false);
+        row.transform.SetParent(parent, false);
         var layout = row.GetComponent<HorizontalLayoutGroup>();
         layout.spacing = Style.Spacing;
         layout.padding = new RectOffset(0, 0, 4, 4);
@@ -337,12 +444,16 @@ public sealed class MenuContext
         layout.childControlWidth = false;
         layout.childForceExpandWidth = false;
 
-        var labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
-        labelGo.name = "Label";
-        labelGo.transform.SetParent(row.transform, false);
-        var labelLayout = labelGo.AddComponent<LayoutElement>();
-        labelLayout.minWidth = 200;
-        labelLayout.flexibleWidth = 0;
+        GameObject labelGo = null;
+        if (!string.IsNullOrEmpty(label))
+        {
+            labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
+            labelGo.name = "Label";
+            labelGo.transform.SetParent(row.transform, false);
+            var labelLayout = labelGo.AddComponent<LayoutElement>();
+            labelLayout.minWidth = 200;
+            labelLayout.flexibleWidth = 0;
+        }
 
         valueLabel = CreateText(string.Empty, Style.FontSize, FontStyle.Normal, Style.Muted);
         valueLabel.name = "Value";
@@ -360,6 +471,9 @@ public sealed class MenuContext
 
         return row;
     }
+
+    private GameObject CreateRow(string label, out GameObject valueLabel, out RectTransform controlArea) =>
+        CreateRow(label, _contentRoot, out valueLabel, out controlArea);
 
     private Button CreateButton(string name, RectTransform parent, Action onClick)
     {

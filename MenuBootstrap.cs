@@ -242,7 +242,9 @@ internal sealed class MenuUI
 
         var contentHolder = new GameObject("ContentHolder", typeof(RectTransform), typeof(LayoutElement));
         contentHolder.transform.SetParent(body.transform, false);
-        contentHolder.GetComponent<LayoutElement>().flexibleWidth = 1;
+        var contentLE = contentHolder.GetComponent<LayoutElement>();
+        contentLE.flexibleWidth = 1;
+        contentLE.minWidth = 320;
 
         BuildTabs(nav.transform);
         BuildContent(contentHolder.transform);
@@ -367,8 +369,31 @@ internal sealed class MenuUI
 
     private void BuildContent(Transform parent)
     {
+        // Frame to give the content area a readable background and padding
+        var frame = new GameObject("ContentFrame", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        frame.transform.SetParent(parent, false);
+        var frameImg = frame.GetComponent<Image>();
+        frameImg.sprite = Style.SolidSprite;
+        frameImg.type = Image.Type.Simple;
+        frameImg.color = new Color32(16, 16, 22, 200);
+        var frameRT = frame.GetComponent<RectTransform>();
+        frameRT.anchorMin = Vector2.zero;
+        frameRT.anchorMax = Vector2.one;
+        frameRT.offsetMin = Vector2.zero;
+        frameRT.offsetMax = Vector2.zero;
+        var frameLE = frame.GetComponent<LayoutElement>();
+        frameLE.flexibleWidth = 1;
+        frameLE.flexibleHeight = 1;
+
+        // Scroll rect inside the frame with inner padding
         var scrollObj = new GameObject("Content", typeof(RectTransform), typeof(ScrollRect));
-        scrollObj.transform.SetParent(parent, false);
+        scrollObj.transform.SetParent(frame.transform, false);
+        var srt = scrollObj.GetComponent<RectTransform>();
+        srt.anchorMin = new Vector2(0, 0);
+        srt.anchorMax = new Vector2(1, 1);
+        srt.offsetMin = new Vector2(8, 8);
+        srt.offsetMax = new Vector2(-8, -8);
+
         var scroll = scrollObj.GetComponent<ScrollRect>();
         scroll.horizontal = false;
         scroll.vertical = true;
@@ -379,9 +404,13 @@ internal sealed class MenuUI
         var vpImage = viewport.GetComponent<Image>();
         vpImage.sprite = Style.SolidSprite;
         vpImage.type = Image.Type.Simple;
-        vpImage.color = new Color32(0, 0, 0, 0);
+        vpImage.color = new Color32(0, 0, 0, 30);
         var mask = viewport.GetComponent<Mask>();
         mask.showMaskGraphic = false;
+        var vpRT = viewport.GetComponent<RectTransform>();
+        vpRT.anchorMin = Vector2.zero;
+        vpRT.anchorMax = Vector2.one;
+        vpRT.offsetMin = vpRT.offsetMax = Vector2.zero;
 
         var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         content.transform.SetParent(viewport.transform, false);
@@ -397,9 +426,6 @@ internal sealed class MenuUI
 
         scroll.content = content.GetComponent<RectTransform>();
         scroll.viewport = viewport.GetComponent<RectTransform>();
-
-        var srt = scrollObj.GetComponent<RectTransform>();
-        srt.sizeDelta = new Vector2(0, 0);
 
         foreach (var page in ModMenu.Pages)
         {
