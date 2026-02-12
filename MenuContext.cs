@@ -107,10 +107,23 @@ public sealed class MenuContext
         cardLe.minHeight = 48;
         cardLe.preferredHeight = 54;
 
-        var labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
-        labelGo.transform.SetParent(block.transform, false);
+        var row = new GameObject("CardRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        row.transform.SetParent(block.transform, false);
+        var rowLayout = row.GetComponent<HorizontalLayoutGroup>();
+        rowLayout.spacing = 8;
+        rowLayout.childControlWidth = true;
+        rowLayout.childForceExpandWidth = false;
+        rowLayout.childControlHeight = true;
+        rowLayout.childForceExpandHeight = false;
+        rowLayout.childAlignment = TextAnchor.MiddleLeft;
 
-        return AddToggle(label, binding, onChanged, block.transform);
+        var labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
+        labelGo.transform.SetParent(row.transform, false);
+        var labelLe = labelGo.AddComponent<LayoutElement>();
+        labelLe.flexibleWidth = 1;
+        labelLe.minWidth = 0;
+
+        return CreateToggleControl(row.transform, binding, onChanged);
     }
 
     public Slider AddSliderCard(string label, ConfigEntry<float> binding, float min, float max, float step, RectTransform parent, Action<float> onChanged = null)
@@ -128,10 +141,37 @@ public sealed class MenuContext
         cardLe.minHeight = 48;
         cardLe.preferredHeight = 54;
 
-        var labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
-        labelGo.transform.SetParent(block.transform, false);
+        var topRow = new GameObject("TopRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        topRow.transform.SetParent(block.transform, false);
+        var topLayout = topRow.GetComponent<HorizontalLayoutGroup>();
+        topLayout.spacing = 8;
+        topLayout.childControlWidth = true;
+        topLayout.childForceExpandWidth = false;
+        topLayout.childControlHeight = true;
+        topLayout.childForceExpandHeight = false;
+        topLayout.childAlignment = TextAnchor.MiddleLeft;
 
-        return AddSliderInternal(binding, min, max, step, onChanged, block.transform, labelGo.GetComponent<Text>());
+        var labelGo = CreateText(label, Style.FontSize, FontStyle.Normal, Style.Text);
+        labelGo.transform.SetParent(topRow.transform, false);
+        var labelLe = labelGo.AddComponent<LayoutElement>();
+        labelLe.flexibleWidth = 1;
+        labelLe.minWidth = 0;
+
+        var valueGo = CreateText("0.00", Style.FontSize, FontStyle.Normal, Style.Muted);
+        valueGo.transform.SetParent(topRow.transform, false);
+        var valueText = valueGo.GetComponent<Text>();
+        valueText.alignment = TextAnchor.MiddleRight;
+        var valueLe = valueGo.AddComponent<LayoutElement>();
+        valueLe.preferredWidth = 56;
+        valueLe.flexibleWidth = 0;
+
+        var controlArea = new GameObject("Control", typeof(RectTransform), typeof(LayoutElement));
+        controlArea.transform.SetParent(block.transform, false);
+        var controlLe = controlArea.GetComponent<LayoutElement>();
+        controlLe.flexibleWidth = 1;
+        controlLe.minWidth = 0;
+
+        return CreateSliderControl(controlArea.GetComponent<RectTransform>(), binding, min, max, step, valueText, onChanged);
     }
 
     public void AddParagraph(string text)
@@ -156,40 +196,7 @@ public sealed class MenuContext
     private Toggle AddToggle(string label, ConfigEntry<bool> binding, Action<bool> onChanged, Transform parent)
     {
         var row = CreateRow(label, parent, out var _, out var controlArea);
-        var toggleObj = new GameObject("Toggle", typeof(RectTransform), typeof(Toggle), typeof(Image));
-        toggleObj.transform.SetParent(controlArea, false);
-
-        var bg = toggleObj.GetComponent<Image>();
-        bg.sprite = Style.SolidSprite;
-        bg.type = Image.Type.Simple;
-        bg.color = Style.Panel;
-
-        var toggle = toggleObj.GetComponent<Toggle>();
-
-        var check = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
-        check.transform.SetParent(toggleObj.transform, false);
-        var checkImg = check.GetComponent<Image>();
-        checkImg.sprite = Style.SolidSprite;
-        checkImg.color = Style.Accent;
-
-        var rt = toggleObj.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(24, 24);
-
-        var crt = check.GetComponent<RectTransform>();
-        crt.anchorMin = new Vector2(0.2f, 0.2f);
-        crt.anchorMax = new Vector2(0.8f, 0.8f);
-        crt.offsetMin = crt.offsetMax = Vector2.zero;
-
-        toggle.graphic = checkImg;
-        toggle.targetGraphic = bg;
-        toggle.isOn = binding.Value;
-        toggle.onValueChanged.AddListener(v =>
-        {
-            binding.Value = v;
-            onChanged?.Invoke(v);
-        });
-
-        return toggle;
+        return CreateToggleControl(controlArea, binding, onChanged);
     }
 
     public Slider AddSlider(string label, ConfigEntry<float> binding, float min, float max, float step = 0f, Action<float> onChanged = null)
@@ -199,7 +206,11 @@ public sealed class MenuContext
     {
         var row = CreateRow(valueTextOverride != null ? string.Empty : null, parentOverride ?? _contentRoot, out var valueLabelObj, out var controlArea);
         var valueText = valueTextOverride ?? valueLabelObj.GetComponent<Text>();
+        return CreateSliderControl(controlArea, binding, min, max, step, valueText, onChanged);
+    }
 
+    private Slider CreateSliderControl(RectTransform controlArea, ConfigEntry<float> binding, float min, float max, float step, Text valueText, Action<float> onChanged)
+    {
         var sliderObj = new GameObject("Slider", typeof(RectTransform), typeof(Slider));
         sliderObj.transform.SetParent(controlArea, false);
         var slider = sliderObj.GetComponent<Slider>();
@@ -263,6 +274,48 @@ public sealed class MenuContext
         if (valueText != null)
             valueText.text = binding.Value.ToString("0.00");
         return slider;
+    }
+
+    private Toggle CreateToggleControl(Transform parent, ConfigEntry<bool> binding, Action<bool> onChanged)
+    {
+        var toggleObj = new GameObject("Toggle", typeof(RectTransform), typeof(Toggle), typeof(Image));
+        toggleObj.transform.SetParent(parent, false);
+
+        var bg = toggleObj.GetComponent<Image>();
+        bg.sprite = Style.SolidSprite;
+        bg.type = Image.Type.Simple;
+        bg.color = Style.Panel;
+
+        var toggle = toggleObj.GetComponent<Toggle>();
+
+        var check = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
+        check.transform.SetParent(toggleObj.transform, false);
+        var checkImg = check.GetComponent<Image>();
+        checkImg.sprite = Style.SolidSprite;
+        checkImg.color = Style.Accent;
+
+        var rt = toggleObj.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(24, 24);
+        var toggleLe = toggleObj.AddComponent<LayoutElement>();
+        toggleLe.preferredWidth = 24;
+        toggleLe.preferredHeight = 24;
+        toggleLe.flexibleWidth = 0;
+
+        var crt = check.GetComponent<RectTransform>();
+        crt.anchorMin = new Vector2(0.2f, 0.2f);
+        crt.anchorMax = new Vector2(0.8f, 0.8f);
+        crt.offsetMin = crt.offsetMax = Vector2.zero;
+
+        toggle.graphic = checkImg;
+        toggle.targetGraphic = bg;
+        toggle.isOn = binding.Value;
+        toggle.onValueChanged.AddListener(v =>
+        {
+            binding.Value = v;
+            onChanged?.Invoke(v);
+        });
+
+        return toggle;
     }
 
     public Dropdown AddDropdown(string label, ConfigEntry<string> binding, List<string> options, Action<string> onChanged = null)
@@ -451,7 +504,7 @@ public sealed class MenuContext
             labelGo.name = "Label";
             labelGo.transform.SetParent(row.transform, false);
             var labelLayout = labelGo.AddComponent<LayoutElement>();
-            labelLayout.minWidth = 200;
+            labelLayout.minWidth = 100;
             labelLayout.flexibleWidth = 0;
         }
 
@@ -459,14 +512,14 @@ public sealed class MenuContext
         valueLabel.name = "Value";
         valueLabel.transform.SetParent(row.transform, false);
         var valueLayout = valueLabel.AddComponent<LayoutElement>();
-        valueLayout.preferredWidth = 70;
+        valueLayout.preferredWidth = 48;
         valueLayout.flexibleWidth = 0;
 
         var control = new GameObject("Control", typeof(RectTransform), typeof(LayoutElement));
         control.transform.SetParent(row.transform, false);
         var le = control.GetComponent<LayoutElement>();
         le.flexibleWidth = 1;
-        le.minWidth = 220;
+        le.minWidth = 120;
         controlArea = control.GetComponent<RectTransform>();
 
         return row;

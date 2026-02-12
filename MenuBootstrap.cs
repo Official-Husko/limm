@@ -213,10 +213,12 @@ internal sealed class MenuUI
         var body = new GameObject("Body", typeof(RectTransform), typeof(HorizontalLayoutGroup));
         body.transform.SetParent(cardObj.transform, false);
         var bodyHLG = body.GetComponent<HorizontalLayoutGroup>();
-        bodyHLG.spacing = Style.Spacing;
+        bodyHLG.spacing = 4;
+        bodyHLG.childAlignment = TextAnchor.UpperLeft;
         bodyHLG.childControlHeight = true;
         bodyHLG.childForceExpandHeight = true;
         bodyHLG.childControlWidth = true;
+        // Keep nav fixed and let content consume remaining width.
         bodyHLG.childForceExpandWidth = false;
         var bodyLE = body.AddComponent<LayoutElement>();
         bodyLE.flexibleHeight = 1;
@@ -228,15 +230,15 @@ internal sealed class MenuUI
         navImg.type = Image.Type.Simple;
         navImg.color = new Color32(22, 22, 30, 255);
         var navVLG = nav.GetComponent<VerticalLayoutGroup>();
-        navVLG.padding = new RectOffset(8, 8, 8, 8);
+        navVLG.padding = new RectOffset(6, 6, 6, 6);
         navVLG.spacing = 6;
         navVLG.childForceExpandWidth = true;
         navVLG.childControlWidth = true;
         navVLG.childForceExpandHeight = false;
         navVLG.childControlHeight = true;
         var navLE = nav.AddComponent<LayoutElement>();
-        navLE.minWidth = 120;
-        navLE.preferredWidth = 135;
+        navLE.minWidth = 90;
+        navLE.preferredWidth = 90;
         navLE.flexibleWidth = 0;
         navLE.flexibleHeight = 1;
 
@@ -244,9 +246,11 @@ internal sealed class MenuUI
         contentHolder.transform.SetParent(body.transform, false);
         var contentLE = contentHolder.GetComponent<LayoutElement>();
         contentLE.flexibleWidth = 1;
-        contentLE.minWidth = 320;
+        contentLE.minWidth = 0;
+        contentLE.preferredWidth = 0;
 
         BuildTabs(nav.transform);
+        AutoFitNavWidth(navLE);
         BuildContent(contentHolder.transform);
 
         // Version footer bottom-right aligned via layout
@@ -264,21 +268,6 @@ internal sealed class MenuUI
         verLE.minHeight = 20;
         verLE.preferredHeight = 20;
         verLE.flexibleWidth = 1;
-    }
-
-    private void BuildHeader(Transform parent)
-    {
-        var header = new GameObject("Header", typeof(RectTransform), typeof(Text));
-        header.transform.SetParent(parent, false);
-        var text = header.GetComponent<Text>();
-        text.font = Style.DefaultFont;
-        text.fontSize = Style.HeaderSize;
-        text.fontStyle = FontStyle.Bold;
-        text.color = Style.Text;
-        text.text = $"{MyPluginInfo.PLUGIN_NAME} v{MyPluginInfo.PLUGIN_VERSION}";
-        text.alignment = TextAnchor.MiddleLeft;
-        var rt = header.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(0, 32);
     }
 
     private void BuildTabs(Transform parent)
@@ -341,6 +330,8 @@ internal sealed class MenuUI
             txt.fontSize = Style.FontSize;
             txt.color = Style.Text;
             txt.alignment = TextAnchor.MiddleLeft;
+            txt.horizontalOverflow = HorizontalWrapMode.Overflow;
+            txt.verticalOverflow = VerticalWrapMode.Truncate;
             txt.text = page.Title;
             var lrt = label.GetComponent<RectTransform>();
             lrt.anchorMin = new Vector2(0, 0);
@@ -367,6 +358,27 @@ internal sealed class MenuUI
         }
     }
 
+    private void AutoFitNavWidth(LayoutElement navLayout)
+    {
+        if (navLayout == null || _tabs.Count == 0)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+
+        var maxLabelWidth = 0f;
+        foreach (var tab in _tabs)
+        {
+            if (tab.Label != null)
+                maxLabelWidth = Mathf.Max(maxLabelWidth, tab.Label.preferredWidth);
+        }
+
+        // Button internals: icon+gap+label+minimal side padding.
+        var targetWidth = Mathf.Clamp(Mathf.CeilToInt(28f + maxLabelWidth + 10f), 82, 180);
+        navLayout.minWidth = targetWidth;
+        navLayout.preferredWidth = targetWidth;
+        navLayout.flexibleWidth = 0f;
+    }
+
     private void BuildContent(Transform parent)
     {
         // Frame to give the content area a readable background and padding
@@ -382,6 +394,8 @@ internal sealed class MenuUI
         frameRT.offsetMin = Vector2.zero;
         frameRT.offsetMax = Vector2.zero;
         var frameLE = frame.GetComponent<LayoutElement>();
+        frameLE.minWidth = 0;
+        frameLE.preferredWidth = 0;
         frameLE.flexibleWidth = 1;
         frameLE.flexibleHeight = 1;
 
@@ -414,6 +428,12 @@ internal sealed class MenuUI
 
         var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         content.transform.SetParent(viewport.transform, false);
+        var contentRT = content.GetComponent<RectTransform>();
+        contentRT.anchorMin = new Vector2(0f, 1f);
+        contentRT.anchorMax = new Vector2(1f, 1f);
+        contentRT.pivot = new Vector2(0.5f, 1f);
+        contentRT.offsetMin = Vector2.zero;
+        contentRT.offsetMax = Vector2.zero;
         var vlg = content.GetComponent<VerticalLayoutGroup>();
         vlg.padding = new RectOffset(Style.Padding, Style.Padding, Style.Padding, Style.Padding);
         vlg.spacing = Style.Spacing;
@@ -435,6 +455,13 @@ internal sealed class MenuUI
             prt.anchorMin = new Vector2(0, 1);
             prt.anchorMax = new Vector2(1, 1);
             prt.pivot = new Vector2(0.5f, 1);
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
+
+            var pageLayoutElement = pageRoot.AddComponent<LayoutElement>();
+            pageLayoutElement.minWidth = 0;
+            pageLayoutElement.preferredWidth = 0;
+            pageLayoutElement.flexibleWidth = 1;
 
             var layout = pageRoot.AddComponent<VerticalLayoutGroup>();
             layout.spacing = Style.Spacing;
