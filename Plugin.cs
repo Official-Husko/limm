@@ -38,14 +38,17 @@ public class Plugin : BaseUnityPlugin
         bootstrap.AnimationSpeed = AnimationSpeed;
         bootstrap.Config = Config;
 
-        // Register built-in pages once; external mods can also call ModMenu.RegisterPage
-        // Register built-in pages matching requested tabs
-        ModMenu.RegisterPage(new Pages.PlayerPage());
-        ModMenu.RegisterPage(new Pages.OnlinePage());
-        ModMenu.RegisterPage(new Pages.ItemsPage());
-        ModMenu.RegisterPage(new Pages.EnemiesPage());
-        ModMenu.RegisterPage(new Pages.WorldPage());
-        ModMenu.RegisterPage(new Pages.AboutPage());
+        // Auto-register all dynamic page registrars (Cheats folder)
+        foreach (var type in typeof(Plugin).Assembly.GetTypes())
+        {
+            if (typeof(IPageRegistrar).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+            {
+                if (System.Activator.CreateInstance(type) is IPageRegistrar registrar)
+                {
+                    registrar.Register();
+                }
+            }
+        }
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_NAME} ({MyPluginInfo.PLUGIN_VERSION}) initialized.");
     }
