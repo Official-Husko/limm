@@ -372,8 +372,8 @@ internal sealed class MenuUI
                 maxLabelWidth = Mathf.Max(maxLabelWidth, tab.Label.preferredWidth);
         }
 
-        // Button internals: icon+gap+label+minimal side padding.
-        var targetWidth = Mathf.Clamp(Mathf.CeilToInt(28f + maxLabelWidth + 10f), 82, 180);
+        // Button internals: left icon block + label + right breathing room.
+        var targetWidth = Mathf.Clamp(Mathf.CeilToInt(34f + maxLabelWidth + 20f), 96, 220);
         navLayout.minWidth = targetWidth;
         navLayout.preferredWidth = targetWidth;
         navLayout.flexibleWidth = 0f;

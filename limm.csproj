@@ -4,7 +4,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>limm</AssemblyName>
     <Product>Len's Island Mod Menu</Product>
-    <Version>1.0.10</Version>
+    <Version>1.0.11</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
